@@ -232,6 +232,10 @@ describe('retryDelayMs', () => {
 		expect(retryDelayMs(10)).toBe(8000);
 	});
 
+	it('caps a huge retry-after header at 60 s', () => {
+		expect(retryDelayMs(0, '3600')).toBe(60000);
+	});
+
 	it('honors a retry-after header in seconds', () => {
 		expect(retryDelayMs(0, '2')).toBe(2000);
 		expect(retryDelayMs(5, 'soon')).toBe(8000);

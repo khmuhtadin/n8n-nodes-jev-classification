@@ -177,10 +177,14 @@ function makeContext(
 					headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
 					body: JSON.stringify(opts.body),
 				});
+				// Mirror n8n's http helper: JSON when the server sends JSON, raw text otherwise
+				// (TypeSafe's edge occasionally answers 503 with a plain-text body).
+				const text = await response.text();
+				const isJson = (response.headers.get('content-type') ?? '').includes('json');
 				return {
 					statusCode: response.status,
 					headers: Object.fromEntries(response.headers),
-					body: await response.json(),
+					body: isJson ? JSON.parse(text) : text,
 				};
 			},
 		},

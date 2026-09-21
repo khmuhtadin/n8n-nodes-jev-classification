@@ -2,6 +2,8 @@
 
 An n8n community node that classifies, scores and checks text with [Jev](https://docs.typesafe.ai), TypeSafe AI's "System One" model. Jev does not generate text: you send it a piece of state (a ticket, a review, a JSON record) plus typed questions, and it returns typed answers with calibrated probabilities. This node wraps that as a **Jev Classification** node that behaves like n8n's built-in Text Classifier (one output branch per category plus a "Needs Review" branch), and is built for volume: it runs requests in parallel and can pack many items into a single request.
 
+![How the Jev Classification node works in n8n: items go in, Jev answers a typed question, the node routes each item to a category output or Needs Review](docs/images/how-it-works.svg)
+
 [![npm version](https://img.shields.io/npm/v/n8n-nodes-jev-classification.svg)](https://www.npmjs.com/package/n8n-nodes-jev-classification)
 [![CI](https://github.com/khmuhtadin/n8n-nodes-jev-classification/actions/workflows/ci.yml/badge.svg)](https://github.com/khmuhtadin/n8n-nodes-jev-classification/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/khmuhtadin/n8n-nodes-jev-classification.svg)](LICENSE)
@@ -20,6 +22,12 @@ Most n8n workflows classify text with a chat LLM plus a structured output parser
 | Batching | Many items and questions per request (TypeSafe measured 12.2x cheaper and 10x faster than separate calls, with identical answers) | One prompt per item |
 
 Sources: [TypeSafe docs on models](https://docs.typesafe.ai/models), [confidence](https://docs.typesafe.ai/confidence) and the [parallel questions cookbook](https://docs.typesafe.ai/cookbooks/parallel_questions).
+
+TypeSafe's own benchmark of four decision workflows puts Jev at the accuracy of mid-size frontier models at roughly 1/100th of the cost per workflow:
+
+![Average of 4 workflows, accuracy vs cost per workflow: Jev sits on the frontier at about $0.0004 per workflow with 68% accuracy](https://framerusercontent.com/images/z4Uu1YpJeEZPBSMTCMI0CN2PX0.png?width=1672&height=918)
+
+Chart by TypeSafe, from [Introducing System One models and Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev). Run your own comparison before relying on these numbers.
 
 ## Installation
 
@@ -53,7 +61,9 @@ All operations share the same input parameters:
 | JSON | `json` | Shown for `json`. Any object or array, sent as the state as-is. |
 | Instructions | `instructions` | The question Jev has to answer. Hidden for Ask Questions. |
 
-Every output item is `{ ...inputFields, jev: { ... } }` (input fields and the `jev` field name are both configurable, see Options). `pairedItem` is set so you can trace results back to input items.
+Every output item is `{ ...inputFields, jev: { ... } }` (input fields and the `jev` field name are both configurable, see Options). Binary data is passed through and `pairedItem` is set so you can trace results back to input items. With the node's **On Error** setting on "Continue", an item whose request failed is emitted on the first output as `{ error: "..." }`.
+
+Categories, Levels and Options are read once per run (not per item), so use fixed values there. Text, JSON, Instructions, Questions, Yes Means and No Means are evaluated per item.
 
 ### Classify
 
@@ -94,7 +104,7 @@ Output (`jev` field):
 }
 ```
 
-`needsReview` is true when `confidence` is below the Confidence Threshold. With the default **When Uncertain = Send to Needs Review output**, such items go to the last output instead of a category output.
+`needsReview` is true when `confidence` is below the Confidence Threshold. With the default **When Uncertain = Send to Needs Review Output**, such items go to the last output instead of a category output.
 
 ### Score
 
@@ -209,13 +219,13 @@ Output (`jev` field):
 }
 ```
 
-When Items per Request is above 1, `usage` is the usage of the request the item was part of, not of the item alone.
+When Items Per Request is above 1, `usage` is the usage of the request the item was part of, not of the item alone.
 
 ## Outputs and routing
 
 | Operation | Outputs |
 |---|---|
-| Classify | One output per category, in the order you defined them, plus **Needs Review** as the last output (only when When Uncertain is "Send to Needs Review output"). |
+| Classify | One output per category, in the order you defined them, plus **Needs Review** as the last output (only when When Uncertain is "Send to Needs Review Output"). |
 | Score | One output. Check `jev.needsReview` or `jev.score` with an IF node. |
 | Check | **Yes**, **No**. |
 | Ask Questions | One output. |
@@ -229,9 +239,9 @@ Outputs are recomputed when you change categories or the When Uncertain option, 
 | Model | `model` | `jev-latest` | `jev-latest` and `jev-preview` both point to `jev-1.13.0` today. Pick **Custom** and enter a version ID such as `jev-1.13.0` if you have tuned thresholds and want them to stay valid when the alias moves. |
 | Confidence Threshold | `confidenceThreshold` | `0.5` | Classify and Score: below this the item gets `needsReview: true`. Check: probability at or above this means Yes. Scale it with risk: a 0.5 threshold is fine for tagging, use 0.8 or higher before an automated action that is hard to undo. |
 | When Uncertain | `uncertainHandling` | `review` | Classify only. `review` sends low-confidence items to the Needs Review output. `best` sends them to the best category anyway and only sets `needsReview`. |
-| Items per Request | `itemsPerRequest` | `1` | Packs N items into one request as `state = { items: [...] }` with one question per item. Raise it for many short items (10 to 20 is a good range for tickets, messages, product titles). Keep it at 1 for long texts: Jev's accuracy drops with large, noisy state, and state plus the longest question must fit in 32k tokens. Max 50. |
-| Parallel Requests | `concurrency` | `4` | Size of the worker pool. TypeSafe rate limits are 250k tokens per second and 1,200 requests per minute (dynamic). At 4 workers and 200 ms per request you send about 1,200 requests per minute, right at the limit, so raise it only together with Items per Request. On 429 the node backs off and retries. |
-| Max Retries | `maxRetries` | `3` | Retries on 429, 529 and 5xx with exponential backoff (500 ms base, 8 s cap), honoring `retry-after`. |
+| Items Per Request | `itemsPerRequest` | `1` | Packs N items into one request as `state = { items: [...] }` with one question per item. Raise it for many short items (10 to 20 is a good range for tickets, messages, product titles). Keep it at 1 for long texts: Jev's accuracy drops with large, noisy state, and state plus the longest question must fit in 32k tokens. Max 50. |
+| Parallel Requests | `concurrency` | `4` | Size of the worker pool. TypeSafe rate limits are 250k tokens per second and 1,200 requests per minute (dynamic). At 4 workers and 200 ms per request you send about 1,200 requests per minute, right at the limit, so raise it only together with Items Per Request. On 429 the node backs off and retries. |
+| Max Retries | `maxRetries` | `3` | Retries on 429, 529 and 5xx with exponential backoff (500 ms base, 8 s cap). A `retry-after` header overrides the backoff, capped at 60 s. |
 | Timeout | `timeout` | `60000` | Per request, in milliseconds. |
 | Output Field | `outputField` | `jev` | Where the result object is written. |
 | Include Input Fields | `includeInput` | `true` | Whether to copy the input item's fields into the output item. |
@@ -240,7 +250,7 @@ Outputs are recomputed when you change categories or the When Uncertain option, 
 
 Cost and time are dominated by the number of requests, not the number of questions, and every question in a request is evaluated independently of the others. So for 1,000 short items:
 
-| Items per Request | Parallel Requests | Requests | Rough wall time at 300 ms |
+| Items Per Request | Parallel Requests | Requests | Rough wall time at 300 ms |
 |---|---|---|---|
 | 1 | 4 | 1,000 | 75 s |
 | 10 | 4 | 100 | 8 s |
@@ -275,7 +285,7 @@ Import any of these from the n8n editor (Workflow menu > Import from File) and s
 |---|---|
 | [examples/route-support-tickets.json](examples/route-support-tickets.json) | Classify 5 tickets into billing / technical / sales with a Needs Review branch, one NoOp per output. |
 | [examples/score-and-check.json](examples/score-and-check.json) | Score reviews on a 5-level sentiment scale with 3 items per request and branch on `jev.score >= 3`; in parallel, Check whether each review mentions a defect and route to Yes / No. |
-| [examples/ask-questions-batch.json](examples/ask-questions-batch.json) | Ask one choice, one score and one noul question about 10 messages in a single request (Items per Request 10, Parallel Requests 2), then pick `jev.answers` with a Set node. |
+| [examples/ask-questions-batch.json](examples/ask-questions-batch.json) | Ask one choice, one score and one noul question about 10 messages in a single request (Items Per Request 10, Parallel Requests 2), then pick `jev.answers` with a Set node. |
 
 ## Limits and costs
 

@@ -223,7 +223,9 @@ export function toResult(
 
 export function retryDelayMs(attempt: number, retryAfterHeader?: string): number {
 	const seconds = Number(retryAfterHeader);
-	if (retryAfterHeader !== undefined && Number.isFinite(seconds)) return seconds * 1000;
+	if (retryAfterHeader !== undefined && Number.isFinite(seconds)) {
+		return Math.min(seconds * 1000, 60000);
+	}
 	return Math.min(500 * 2 ** attempt, 8000);
 }
 

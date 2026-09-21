@@ -136,7 +136,11 @@ function readQuestions(
 
 function apiError(ctx: IExecuteFunctions, response: IN8nHttpFullResponse, itemIndex: number) {
 	const status = response.statusCode;
-	const body = response.body as JsonObject;
+	const body = (
+		typeof response.body === 'object' && response.body !== null
+			? response.body
+			: { message: String(response.body ?? '') }
+	) as JsonObject;
 	if (status === 401) {
 		return new NodeOperationError(
 			ctx.getNode(),
@@ -145,7 +149,7 @@ function apiError(ctx: IExecuteFunctions, response: IN8nHttpFullResponse, itemIn
 		);
 	}
 	if (status === 422) {
-		const detail = body.detail as Array<{ loc: string[]; msg: string }> | string;
+		const detail = (body.detail ?? body.message) as Array<{ loc: string[]; msg: string }> | string;
 		const message = Array.isArray(detail)
 			? detail.map((d) => `${d.loc.join('.')}: ${d.msg}`).join('; ')
 			: JSON.stringify(detail);
@@ -347,6 +351,7 @@ export class JevClassification implements INodeType {
 							{
 								displayName: 'Description',
 								name: 'description',
+						noDataExpression: true,
 								type: 'string',
 								default: '',
 								placeholder: 'e.g. Invoices, refunds and payment issues',
@@ -373,6 +378,7 @@ export class JevClassification implements INodeType {
 							{
 								displayName: 'Level',
 								name: 'level',
+						noDataExpression: true,
 								type: 'string',
 								required: true,
 								default: '',
@@ -421,6 +427,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Confidence Threshold',
 						name: 'confidenceThreshold',
+						noDataExpression: true,
 						type: 'number',
 						typeOptions: { minValue: 0, maxValue: 1, numberPrecision: 2 },
 						default: 0.5,
@@ -430,6 +437,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Include Input Fields',
 						name: 'includeInput',
+						noDataExpression: true,
 						type: 'boolean',
 						default: true,
 						description: 'Whether to copy the input item fields into the output item',
@@ -437,6 +445,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Items Per Request',
 						name: 'itemsPerRequest',
+						noDataExpression: true,
 						type: 'number',
 						typeOptions: { minValue: 1, maxValue: 50 },
 						default: 1,
@@ -446,6 +455,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Max Retries',
 						name: 'maxRetries',
+						noDataExpression: true,
 						type: 'number',
 						typeOptions: { minValue: 0, maxValue: 10 },
 						default: 3,
@@ -454,6 +464,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Model',
 						name: 'model',
+						noDataExpression: true,
 						type: 'options',
 						options: [
 							{ name: 'Custom', value: 'custom' },
@@ -466,6 +477,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Model ID',
 						name: 'modelId',
+						noDataExpression: true,
 						type: 'string',
 						default: '',
 						placeholder: 'e.g. jev-1.13.0',
@@ -475,6 +487,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Output Field',
 						name: 'outputField',
+						noDataExpression: true,
 						type: 'string',
 						default: 'jev',
 						description: 'Name of the field that receives the result',
@@ -482,6 +495,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Parallel Requests',
 						name: 'concurrency',
+						noDataExpression: true,
 						type: 'number',
 						typeOptions: { minValue: 1, maxValue: 20 },
 						default: 4,
@@ -490,6 +504,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'Timeout',
 						name: 'timeout',
+						noDataExpression: true,
 						type: 'number',
 						typeOptions: { minValue: 1000 },
 						default: 60000,
@@ -498,6 +513,7 @@ export class JevClassification implements INodeType {
 					{
 						displayName: 'When Uncertain',
 						name: 'uncertainHandling',
+						noDataExpression: true,
 						type: 'options',
 						options: [
 							{
@@ -550,6 +566,14 @@ export class JevClassification implements INodeType {
 					itemIndex: 0,
 				});
 			}
+			const names = categories.map((entry) => entry.category.trim());
+			if (names.includes('') || new Set(names).size !== names.length) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Category names must be unique and not empty',
+					{ itemIndex: 0 },
+				);
+			}
 		}
 		if (operation === 'score') {
 			const collection = this.getNodeParameter('levels', 0, {}) as {
@@ -596,9 +620,20 @@ export class JevClassification implements INodeType {
 					model: outcome.response.model,
 					usage: outcome.response.usage,
 				});
+				if (outputIndex < 0) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`Jev answered "${String(result.category)}", which is not one of the categories`,
+						{ itemIndex },
+					);
+				}
 				const json: IDataObject = settings.includeInput ? { ...items[itemIndex].json } : {};
 				json[settings.outputField] = result as IDataObject;
-				outputs[outputIndex].push({ json, pairedItem: { item: itemIndex } });
+				outputs[outputIndex].push({
+					json,
+					binary: items[itemIndex].binary,
+					pairedItem: { item: itemIndex },
+				});
 			});
 		});
 

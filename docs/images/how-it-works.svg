@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#6B7280"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="560" rx="16" fill="#F8FAFC"/>
+
+  <!-- Title -->
+  <text x="40" y="44" font-size="22" font-weight="700" fill="#111827">How the Jev Classification node works in n8n</text>
+
+  <!-- Workflow row -->
+  <!-- Trigger / previous node -->
+  <rect x="40" y="130" width="190" height="110" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="135" y="170" font-size="15" font-weight="600" fill="#111827" text-anchor="middle">Any n8n node</text>
+  <text x="135" y="194" font-size="13" fill="#6B7280" text-anchor="middle">Gmail, Webhook, Sheets,</text>
+  <text x="135" y="212" font-size="13" fill="#6B7280" text-anchor="middle">Postgres, HTTP Request ...</text>
+
+  <!-- items arrow -->
+  <line x1="232" y1="185" x2="318" y2="185" stroke="#6B7280" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="275" y="172" font-size="12" fill="#6B7280" text-anchor="middle">items</text>
+  <text x="275" y="206" font-size="11" fill="#9CA3AF" text-anchor="middle">{ text: "..." }</text>
+
+  <!-- Jev node -->
+  <rect x="322" y="100" width="300" height="170" rx="14" fill="#FFFFFF" stroke="#1F2937" stroke-width="2.5"/>
+  <!-- mini icon -->
+  <rect x="342" y="120" width="34" height="34" rx="8" fill="none" stroke="#1F2937" stroke-width="2.5"/>
+  <path d="M361 127v13a4.5 4.5 0 0 1-4.5 4.5h-1a4.5 4.5 0 0 1-4.5-4.5v-1h4v1a1 1 0 0 0 1 1h.5a1 1 0 0 0 1-1v-13z" fill="#1F2937"/>
+  <rect x="365" y="139" width="4" height="7" rx="1" fill="#1F2937"/>
+  <rect x="365" y="133" width="4" height="4" rx="1" fill="#1F2937" opacity="0.55"/>
+  <rect x="365" y="127" width="4" height="4" rx="1" fill="#1F2937" opacity="0.3"/>
+  <text x="388" y="143" font-size="17" font-weight="700" fill="#111827">Jev Classification</text>
+  <text x="342" y="180" font-size="13" fill="#374151">Operation: <tspan font-weight="600">Classify</tspan></text>
+  <text x="342" y="202" font-size="13" fill="#374151">Instructions: "Which team should handle this?"</text>
+  <text x="342" y="224" font-size="13" fill="#374151">Categories: Billing, Technical, Sales</text>
+  <text x="342" y="250" font-size="12" fill="#6B7280">Options: Parallel Requests 4, Items Per Request 10</text>
+
+  <!-- Output branches -->
+  <g stroke="#6B7280" stroke-width="2" fill="none" marker-end="url(#arrow)">
+    <path d="M624 150 C 680 150, 680 110, 738 110"/>
+    <path d="M624 175 C 680 175, 680 165, 738 165"/>
+    <path d="M624 200 C 680 200, 680 220, 738 220"/>
+    <path d="M624 225 C 680 225, 680 275, 738 275"/>
+  </g>
+  <g font-size="14" font-weight="600" fill="#111827">
+    <rect x="742" y="92" width="150" height="36" rx="10" fill="#DCFCE7" stroke="#86EFAC" stroke-width="1.5"/>
+    <text x="817" y="116" text-anchor="middle">Billing</text>
+    <rect x="742" y="147" width="150" height="36" rx="10" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1.5"/>
+    <text x="817" y="171" text-anchor="middle">Technical</text>
+    <rect x="742" y="202" width="150" height="36" rx="10" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1.5"/>
+    <text x="817" y="226" text-anchor="middle">Sales</text>
+    <rect x="742" y="257" width="150" height="36" rx="10" fill="#FEE2E2" stroke="#FCA5A5" stroke-width="1.5"/>
+    <text x="817" y="281" text-anchor="middle">Needs Review</text>
+  </g>
+  <g font-size="12" fill="#6B7280">
+    <text x="905" y="116">→ Billing team queue</text>
+    <text x="905" y="171">→ Create Jira issue</text>
+    <text x="905" y="226">→ Notify sales in Slack</text>
+    <text x="905" y="281">→ Human review (confidence &lt; 0.5)</text>
+  </g>
+
+  <!-- Divider -->
+  <line x1="40" y1="318" x2="1160" y2="318" stroke="#E5E7EB" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <text x="40" y="346" font-size="14" font-weight="700" fill="#111827">Inside the node, per request</text>
+
+  <!-- Request -->
+  <rect x="40" y="362" width="330" height="150" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="56" y="388" font-size="13" font-weight="700" fill="#111827">POST api.typesafe.ai/v1/systemone</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" fill="#374151">
+    <text x="56" y="412">{ "state": "I was charged twice...",</text>
+    <text x="56" y="430">  "model": "jev-latest",</text>
+    <text x="56" y="448">  "questions": { "q": { "type": "choice",</text>
+    <text x="56" y="466">    "instructions": "Which team...?",</text>
+    <text x="56" y="484">    "criteria": { "Billing": ..., ... } } } }</text>
+  </g>
+
+  <line x1="372" y1="437" x2="438" y2="437" stroke="#6B7280" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Jev model -->
+  <rect x="442" y="392" width="150" height="90" rx="45" fill="#111827"/>
+  <text x="517" y="431" font-size="18" font-weight="700" fill="#FFFFFF" text-anchor="middle">Jev</text>
+  <text x="517" y="452" font-size="11" fill="#D1D5DB" text-anchor="middle">TypeSafe System One</text>
+  <text x="517" y="468" font-size="11" fill="#D1D5DB" text-anchor="middle">~70–500 ms</text>
+
+  <line x1="594" y1="437" x2="660" y2="437" stroke="#6B7280" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Response -->
+  <rect x="664" y="362" width="300" height="150" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="680" y="388" font-size="13" font-weight="700" fill="#111827">Typed answer, no text to parse</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" fill="#374151">
+    <text x="680" y="412">{ "choice": "Billing",</text>
+    <text x="680" y="430">  "confidence": 0.93,</text>
+    <text x="680" y="448">  "probabilities": {</text>
+    <text x="680" y="466">    "Billing": 0.95, "Technical": 0.04,</text>
+    <text x="680" y="484">    "Sales": 0.01 } }</text>
+  </g>
+
+  <!-- Routing note -->
+  <rect x="988" y="362" width="172" height="150" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="1004" y="388" font-size="13" font-weight="700" fill="#111827">Node then routes</text>
+  <text x="1004" y="412" font-size="12" fill="#374151">confidence ≥ threshold</text>
+  <text x="1004" y="430" font-size="12" fill="#374151">→ category output</text>
+  <text x="1004" y="458" font-size="12" fill="#374151">confidence &lt; threshold</text>
+  <text x="1004" y="476" font-size="12" fill="#374151">→ Needs Review</text>
+  <text x="1004" y="500" font-size="11" fill="#6B7280">threshold is an option</text>
+
+  <!-- Footer -->
+  <text x="40" y="540" font-size="12" fill="#6B7280">Throughput: requests run in parallel (Parallel Requests), and many items can share one request (Items Per Request). $0.042 per 1M input tokens, output free.</text>
+</svg>

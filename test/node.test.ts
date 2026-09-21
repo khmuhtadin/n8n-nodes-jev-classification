@@ -185,6 +185,53 @@ describe('classify', () => {
 		expect(Object.keys(outputs[0][0].json)).toEqual(['result']);
 	});
 
+	it('rejects duplicate or empty category names before any request', async () => {
+		const request = server(choiceFor);
+		const duplicate = {
+			...classifyParams,
+			categories: {
+				categories: [
+					{ category: 'Billing', description: '' },
+					{ category: 'Billing', description: '' },
+				],
+			},
+		};
+		await expect(run(tickets, duplicate, request)).rejects.toThrow(
+			'Category names must be unique and not empty',
+		);
+		const empty = {
+			...classifyParams,
+			categories: {
+				categories: [
+					{ category: 'Billing', description: '' },
+					{ category: ' ', description: '' },
+				],
+			},
+		};
+		await expect(run(tickets, empty, request)).rejects.toThrow(
+			'Category names must be unique and not empty',
+		);
+		expect(request).not.toHaveBeenCalled();
+	});
+
+	it('fails clearly when the API answers with a choice outside the categories', async () => {
+		const request = server(() => ({
+			type: 'choice',
+			choice: 'billing',
+			probabilities: { billing: 1 },
+			confidence: 1,
+		}));
+		await expect(run(tickets, classifyParams, request)).rejects.toThrow(
+			'Jev answered "billing", which is not one of the categories',
+		);
+	});
+
+	it('passes binary data through to the output item', async () => {
+		const withBinary = [{ ...tickets[0], binary: { data: { data: '', mimeType: 'text/plain' } } }];
+		const outputs = await run(withBinary, classifyParams, server(choiceFor));
+		expect(outputs[0][0].binary).toEqual({ data: { data: '', mimeType: 'text/plain' } });
+	});
+
 	it('rejects fewer than two categories before any request', async () => {
 		const request = server(choiceFor);
 		const params = {
