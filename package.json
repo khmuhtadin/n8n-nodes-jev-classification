@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-jev-classification",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "n8n community node for Jev by TypeSafe AI: classify, score and check text with calibrated probabilities. Parallel requests and multi-item batching for high-volume workflows.",
 	"license": "MIT",
 	"homepage": "https://github.com/khmuhtadin/n8n-nodes-jev-classification#readme",

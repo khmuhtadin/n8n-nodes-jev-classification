@@ -2,7 +2,11 @@
 	"node": "n8n-nodes-jev-classification",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
-	"categories": ["AI", "Data & Storage"],
+	"categories": ["AI"],
+	"subcategories": {
+		"AI": ["Chains", "Root Nodes"]
+	},
+	"alias": ["jev", "typesafe", "classify", "classifier", "text classifier", "router", "score", "sentiment", "triage"],
 	"resources": {
 		"credentialDocumentation": [
 			{

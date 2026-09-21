@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 (2026-09-21)
+
+- Fix: the regular "Jev Classification" node was hidden from the nodes panel (only the AI Agent tool variant showed). The node codex now uses the same AI category and subcategories as n8n's built-in Text Classifier, so it appears under Advanced AI and in search.
+- Add search aliases: jev, typesafe, classify, classifier, router, score, sentiment, triage.
+
 ## 0.1.0 (2026-09-21)
 
 Initial release.
