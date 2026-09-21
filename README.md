@@ -40,7 +40,7 @@ cd ~/.n8n/nodes
 npm i n8n-nodes-jev-classification
 ```
 
-Restart n8n afterwards. The node shows up as **Jev Classification** when you search the nodes panel (also under Advanced AI). The **Jev Classification Tool** variant for AI Agents appears only if your instance sets `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true`. n8n Cloud only lists community nodes that have passed n8n's verification; until this package is verified you need a self-hosted instance.
+Restart n8n afterwards. The node shows up as **Jev Classification** when you search the nodes panel (also under Advanced AI). The **Jev Classification Tool** variant for AI Agents appears only if your instance sets `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true`. This node is **self-hosted only**. n8n declined to verify it (September 2026) because n8n is building a built-in classification node and does not verify community nodes that overlap with built-in functionality. That decision was explicitly not about quality, and the package stays fully usable on self-hosted instances.
 
 ## Credentials
 
