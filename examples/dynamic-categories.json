@@ -1,0 +1,170 @@
+{
+  "name": "Jev: dynamic categories per item",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { text: 'The checkout page throws a 500 error when I apply a coupon.', categories: 'bug, feature request, question' } },\n  { json: { text: 'Could you add dark mode to the mobile app?', categories: 'bug, feature request, question' } },\n  { json: { text: 'Great pasta but the service was slow and the room was noisy.', categories: '{\"food\": \"Taste, portions, menu\", \"service\": \"Staff, waiting time\", \"ambience\": \"Noise, decor, comfort\"}' } },\n  { json: { text: 'Is parking available near the venue?', categories: '[\"logistics\", \"tickets\", \"program\"]' } }\n];"
+      },
+      "name": "Items With Their Own Categories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "classify",
+        "categoriesSource": "dynamic",
+        "inputType": "text",
+        "text": "={{ $json.text }}",
+        "instructions": "Which category fits this message best?",
+        "dynamicCategories": "={{ $json.categories }}",
+        "options": {}
+      },
+      "name": "Jev Classification",
+      "type": "n8n-nodes-jev-classification.jevClassification",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "jevClassificationApi": {
+          "id": "",
+          "name": "Jev (TypeSafe) API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.jev.needsReview }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Needs Review"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Confident"
+        }
+      },
+      "name": "Confident or Needs Review",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Needs Review",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        940,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Confident",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        940,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Items With Their Own Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Items With Their Own Categories": {
+      "main": [
+        [
+          {
+            "node": "Jev Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jev Classification": {
+      "main": [
+        [
+          {
+            "node": "Confident or Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confident or Needs Review": {
+      "main": [
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

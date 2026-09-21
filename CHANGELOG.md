@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 (2026-09-21)
+
+- Classify: new **Categories Source** option. **Fixed** (default) keeps one output per category. **Dynamic** reads the categories per item from a comma-separated string, a JSON array or a JSON object of name to description, so they can come from an expression or be filled by an AI Agent. Dynamic mode has a single **Result** output.
+- When Uncertain is hidden in dynamic mode (no Needs Review output); `jev.needsReview` is still set.
+
 ## 0.1.1 (2026-09-21)
 
 - Fix: the regular "Jev Classification" node was hidden from the nodes panel (only the AI Agent tool variant showed). The node codex now uses the same AI category and subcategories as n8n's built-in Text Classifier, so it appears under Advanced AI and in search.

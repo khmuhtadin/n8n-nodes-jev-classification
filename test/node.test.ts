@@ -243,6 +243,70 @@ describe('classify', () => {
 	});
 });
 
+describe('classify with dynamic categories', () => {
+	const dynamicParams: Params = {
+		...classifyParams,
+		categoriesSource: 'dynamic',
+		categories: undefined,
+	};
+
+	it('reads categories per item and uses a single output', async () => {
+		const request = server(choiceFor);
+		const outputs = await run(
+			tickets,
+			{
+				...dynamicParams,
+				dynamicCategories: (i: number) =>
+					i === 0 ? 'Billing, Tech' : '{"Billing": "Money", "Tech": "Bugs"}',
+			},
+			request,
+		);
+		expect(outputs).toHaveLength(1);
+		expect(outputs[0].map((item) => item.pairedItem)).toEqual([
+			{ item: 0 },
+			{ item: 1 },
+			{ item: 2 },
+		]);
+		expect(outputs[0][0].json.jev).toMatchObject({ category: 'Billing', needsReview: false });
+		expect(outputs[0][2].json.jev).toMatchObject({ category: 'Tech', needsReview: true });
+		expect(request.mock.calls[0][1].body.questions.q.criteria).toEqual({
+			Billing: null,
+			Tech: null,
+		});
+		expect(request.mock.calls[1][1].body.questions.q.criteria).toEqual({
+			Billing: 'Money',
+			Tech: 'Bugs',
+		});
+	});
+
+	it('rejects unreadable or too few dynamic categories before any request', async () => {
+		const request = server(choiceFor);
+		await expect(
+			run(tickets, { ...dynamicParams, dynamicCategories: '{bad json' }, request),
+		).rejects.toThrow('Categories could not be read');
+		await expect(
+			run(tickets, { ...dynamicParams, dynamicCategories: 'only-one' }, request),
+		).rejects.toThrow('Add at least two categories');
+		expect(request).not.toHaveBeenCalled();
+	});
+
+	it('does not fail when the answer is outside the dynamic categories', async () => {
+		const request = server(() => ({
+			type: 'choice',
+			choice: 'billing',
+			probabilities: { billing: 1 },
+			confidence: 1,
+		}));
+		const outputs = await run(
+			tickets,
+			{ ...dynamicParams, dynamicCategories: 'Billing, Tech' },
+			request,
+		);
+		expect(outputs[0]).toHaveLength(3);
+		expect(outputs[0][0].json.jev).toMatchObject({ category: 'billing' });
+	});
+});
+
 describe('check', () => {
 	it('routes Yes to output 0 and No to output 1', async () => {
 		const request = server((state) => ({

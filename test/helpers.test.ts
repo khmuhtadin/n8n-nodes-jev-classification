@@ -5,6 +5,7 @@ import type { ApiResponse, Question, QuestionParams } from '../nodes/JevClassifi
 import {
 	buildQuestion,
 	buildRequests,
+	parseCategories,
 	retryDelayMs,
 	runPool,
 	splitAnswers,
@@ -259,5 +260,38 @@ describe('runPool', () => {
 
 	it('handles an empty task list', async () => {
 		expect(await runPool([], 4)).toEqual([]);
+	});
+});
+
+describe('parseCategories', () => {
+	it('splits a comma-separated string and trims names', () => {
+		expect(parseCategories(' billing, technical ,sales')).toEqual([
+			{ category: 'billing', description: '' },
+			{ category: 'technical', description: '' },
+			{ category: 'sales', description: '' },
+		]);
+	});
+
+	it('accepts a JSON array string and a real array', () => {
+		const expected = [
+			{ category: 'a', description: '' },
+			{ category: 'b', description: '' },
+		];
+		expect(parseCategories('["a", "b"]')).toEqual(expected);
+		expect(parseCategories(['a', 'b'])).toEqual(expected);
+	});
+
+	it('accepts a JSON object of name to description, null meaning no description', () => {
+		const expected = [
+			{ category: 'billing', description: 'Invoices and refunds' },
+			{ category: 'other', description: '' },
+		];
+		expect(parseCategories('{"billing": "Invoices and refunds", "other": null}')).toEqual(expected);
+		expect(parseCategories({ billing: 'Invoices and refunds', other: null })).toEqual(expected);
+	});
+
+	it('rejects values that are not a list or an object', () => {
+		expect(() => parseCategories(42)).toThrow('Categories must be');
+		expect(() => parseCategories('{not json')).toThrow();
 	});
 });

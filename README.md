@@ -78,7 +78,9 @@ Pick one category from a list and route the item to that category's output.
 | Parameter | Name | Notes |
 |---|---|---|
 | Instructions | `instructions` | Example: "Which team should handle this ticket?" |
-| Categories | `categories` | Fixed collection. Each entry has `category` (required, becomes an output name, no expressions) and an optional `description` used as the rubric. At least 2. |
+| Categories Source | `categoriesSource` | `fixed` (default): define categories below, one output per category. `dynamic`: categories come from an expression or an AI Agent, single output. |
+| Categories | `categories` | Fixed mode. Fixed collection: each entry has `category` (required, becomes an output name, no expressions) and an optional `description` used as the rubric. At least 2. |
+| Categories | `dynamicCategories` | Dynamic mode. Comma-separated names (`billing, technical, sales`), a JSON array of names, or a JSON object of name to description (`{"billing": "Invoices and refunds", "other": null}`). Evaluated per item, so it can be an expression like `{{ $json.categories }}` or be filled by an AI Agent. |
 
 Example configuration:
 
@@ -111,6 +113,24 @@ Output (`jev` field):
 ```
 
 `needsReview` is true when `confidence` is below the Confidence Threshold. With the default **When Uncertain = Send to Needs Review Output**, such items go to the last output instead of a category output.
+
+#### Dynamic categories
+
+Set **Categories Source** to **Dynamic** when the category list is not known at design time: it comes from a database row, a previous node, or the AI Agent that calls this node as a tool. Because n8n needs the output list before the workflow runs, dynamic mode has one output named **Result**; the chosen category is in `jev.category`, so route with a Switch node if you need branches. `jev.needsReview` is still set from the confidence threshold.
+
+Example with categories from the previous node:
+
+```json
+{
+  "operation": "classify",
+  "categoriesSource": "dynamic",
+  "text": "={{ $json.text }}",
+  "instructions": "Which topic does this message belong to?",
+  "dynamicCategories": "={{ $json.categories }}"
+}
+```
+
+As an AI Agent tool, leave the Categories field on "Defined automatically by the model" and the agent decides the categories per call.
 
 ### Score
 
@@ -231,7 +251,8 @@ When Items Per Request is above 1, `usage` is the usage of the request the item 
 
 | Operation | Outputs |
 |---|---|
-| Classify | One output per category, in the order you defined them, plus **Needs Review** as the last output (only when When Uncertain is "Send to Needs Review Output"). |
+| Classify (fixed categories) | One output per category, in the order you defined them, plus **Needs Review** as the last output (only when When Uncertain is "Send to Needs Review Output"). |
+| Classify (dynamic categories) | One output, **Result**. Route on `jev.category` with a Switch node if needed. |
 | Score | One output. Check `jev.needsReview` or `jev.score` with an IF node. |
 | Check | **Yes**, **No**. |
 | Ask Questions | One output. |
@@ -295,6 +316,7 @@ Import any of these from the n8n editor (Workflow menu > Import from File) and s
 |---|---|
 | [examples/route-support-tickets.json](examples/route-support-tickets.json) | Classify 5 tickets into billing / technical / sales with a Needs Review branch, one NoOp per output. |
 | [examples/score-and-check.json](examples/score-and-check.json) | Score reviews on a 5-level sentiment scale with 3 items per request and branch on `jev.score >= 3`; in parallel, Check whether each review mentions a defect and route to Yes / No. |
+| [examples/dynamic-categories.json](examples/dynamic-categories.json) | Classify with **Dynamic** categories: each item carries its own `categories` string, the node reads it per item and returns everything on one Result output. |
 | [examples/ask-questions-batch.json](examples/ask-questions-batch.json) | Ask one choice, one score and one noul question about 10 messages in a single request (Items Per Request 10, Parallel Requests 2), then pick `jev.answers` with a Set node. |
 
 ## Limits and costs

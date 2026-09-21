@@ -16,9 +16,10 @@ import {
 	sleep,
 } from 'n8n-workflow';
 
-import type { ApiResponse, Operation, Question, Request } from './helpers';
+import type { ApiResponse, Category, Operation, Question, Request } from './helpers';
 import {
 	buildQuestion,
+	parseCategories,
 	buildRequests,
 	retryDelayMs,
 	runPool,
@@ -37,7 +38,7 @@ const configuredOutputs = (parameters: INodeParameters) => {
 			{ type: 'main', displayName: 'No' },
 		];
 	}
-	if (operation !== 'classify') {
+	if (operation !== 'classify' || parameters.categoriesSource === 'dynamic') {
 		return [{ type: 'main', displayName: 'Result' }];
 	}
 	const collection = (parameters.categories as IDataObject) || {};
@@ -107,7 +108,7 @@ function readState(ctx: IExecuteFunctions, item: INodeExecutionData, itemIndex: 
 function readQuestions(
 	ctx: IExecuteFunctions,
 	operation: Operation,
-	categories: Array<{ category: string; description: string }>,
+	categories: Category[],
 	levels: string[],
 	itemIndex: number,
 ): Record<string, Question> {
@@ -132,6 +133,33 @@ function readQuestions(
 	const noMeans =
 		operation === 'check' ? (ctx.getNodeParameter('noMeans', itemIndex) as string) : '';
 	return { q: buildQuestion(operation, { instructions, categories, levels, yesMeans, noMeans }) };
+}
+
+function checkCategories(ctx: IExecuteFunctions, categories: Category[], itemIndex: number) {
+	if (categories.length < 2) {
+		throw new NodeOperationError(ctx.getNode(), 'Add at least two categories', { itemIndex });
+	}
+	const names = categories.map((entry) => entry.category);
+	if (names.includes('') || new Set(names).size !== names.length) {
+		throw new NodeOperationError(ctx.getNode(), 'Category names must be unique and not empty', {
+			itemIndex,
+		});
+	}
+}
+
+function readDynamicCategories(ctx: IExecuteFunctions, itemIndex: number): Category[] {
+	let categories: Category[];
+	try {
+		categories = parseCategories(ctx.getNodeParameter('dynamicCategories', itemIndex));
+	} catch (error) {
+		throw new NodeOperationError(
+			ctx.getNode(),
+			`Categories could not be read: ${(error as Error).message}`,
+			{ itemIndex },
+		);
+	}
+	checkCategories(ctx, categories, itemIndex);
+	return categories;
 }
 
 function apiError(ctx: IExecuteFunctions, response: IN8nHttpFullResponse, itemIndex: number) {
@@ -325,6 +353,39 @@ export class JevClassification implements INodeType {
 				displayOptions: { show: { operation: ['check'] } },
 			},
 			{
+				displayName: 'Categories Source',
+				name: 'categoriesSource',
+				type: 'options',
+				noDataExpression: true,
+				options: [
+					{
+						name: 'Fixed',
+						value: 'fixed',
+						description: 'Define the categories below. Each one becomes an output.',
+					},
+					{
+						name: 'Dynamic',
+						value: 'dynamic',
+						description:
+							'Take the categories from an expression or an AI Agent. All items leave through one output.',
+					},
+				],
+				default: 'fixed',
+				displayOptions: { show: { operation: ['classify'] } },
+			},
+			{
+				displayName: 'Categories',
+				name: 'dynamicCategories',
+				type: 'string',
+				typeOptions: { rows: 2 },
+				required: true,
+				default: '',
+				placeholder: 'e.g. billing, technical, sales',
+				description:
+					'Comma-separated names, a JSON array of names, or a JSON object of name to description. Accepts expressions and can be filled by an AI Agent.',
+				displayOptions: { show: { operation: ['classify'], categoriesSource: ['dynamic'] } },
+			},
+			{
 				displayName: 'Categories',
 				name: 'categories',
 				type: 'fixedCollection',
@@ -332,7 +393,7 @@ export class JevClassification implements INodeType {
 				placeholder: 'Add Category',
 				default: {},
 				description: 'Each category becomes an output. Add at least two.',
-				displayOptions: { show: { operation: ['classify'] } },
+				displayOptions: { show: { operation: ['classify'], categoriesSource: ['fixed'] } },
 				options: [
 					{
 						name: 'categories',
@@ -351,7 +412,7 @@ export class JevClassification implements INodeType {
 							{
 								displayName: 'Description',
 								name: 'description',
-						noDataExpression: true,
+								noDataExpression: true,
 								type: 'string',
 								default: '',
 								placeholder: 'e.g. Invoices, refunds and payment issues',
@@ -530,7 +591,7 @@ export class JevClassification implements INodeType {
 						],
 						default: 'review',
 						description: 'Where to send items whose confidence is below the threshold',
-						displayOptions: { show: { '/operation': ['classify'] } },
+						displayOptions: { show: { '/operation': ['classify'], '/categoriesSource': ['fixed'] } },
 					},
 				],
 			},
@@ -554,26 +615,18 @@ export class JevClassification implements INodeType {
 			continueOnFail: this.continueOnFail(),
 		};
 
-		let categories: Array<{ category: string; description: string }> = [];
+		const dynamic =
+			operation === 'classify' &&
+			this.getNodeParameter('categoriesSource', 0, 'fixed') === 'dynamic';
+		let categories: Category[] = [];
 		let levels: string[] = [];
-		if (operation === 'classify') {
-			const collection = this.getNodeParameter('categories', 0, {}) as {
-				categories?: Array<{ category: string; description: string }>;
-			};
-			categories = collection.categories ?? [];
-			if (categories.length < 2) {
-				throw new NodeOperationError(this.getNode(), 'Add at least two categories', {
-					itemIndex: 0,
-				});
-			}
-			const names = categories.map((entry) => entry.category.trim());
-			if (names.includes('') || new Set(names).size !== names.length) {
-				throw new NodeOperationError(
-					this.getNode(),
-					'Category names must be unique and not empty',
-					{ itemIndex: 0 },
-				);
-			}
+		if (operation === 'classify' && !dynamic) {
+			const collection = this.getNodeParameter('categories', 0, {}) as { categories?: Category[] };
+			categories = (collection.categories ?? []).map((entry) => ({
+				category: entry.category.trim(),
+				description: entry.description,
+			}));
+			checkCategories(this, categories, 0);
 		}
 		if (operation === 'score') {
 			const collection = this.getNodeParameter('levels', 0, {}) as {
@@ -588,7 +641,12 @@ export class JevClassification implements INodeType {
 		}
 
 		const states = items.map((item, i) => readState(this, item, i));
-		const questions = items.map((_, i) => readQuestions(this, operation, categories, levels, i));
+		const categoriesPerItem = items.map((_, i) =>
+			dynamic ? readDynamicCategories(this, i) : categories,
+		);
+		const questions = items.map((_, i) =>
+			readQuestions(this, operation, categoriesPerItem[i], levels, i),
+		);
 		const requests = buildRequests(states, questions, settings.itemsPerRequest);
 		const outcomes = await runPool(
 			requests.map((request) => () => sendRequest(this, request, settings)),
@@ -597,11 +655,10 @@ export class JevClassification implements INodeType {
 
 		let outputCount = 1;
 		if (operation === 'check') outputCount = 2;
-		if (operation === 'classify') {
+		if (operation === 'classify' && !dynamic) {
 			outputCount = categories.length + (settings.uncertainHandling === 'review' ? 1 : 0);
 		}
 		const outputs: INodeExecutionData[][] = Array.from({ length: outputCount }, () => []);
-		const categoryNames = categories.map((entry) => entry.category);
 
 		requests.forEach((request, r) => {
 			const outcome = outcomes[r];
@@ -614,13 +671,13 @@ export class JevClassification implements INodeType {
 			const perItem = splitAnswers(outcome.response, request);
 			request.itemIndexes.forEach((itemIndex, position) => {
 				const { result, outputIndex } = toResult(operation, perItem[position], {
-					categories: categoryNames,
+					categories: categoriesPerItem[itemIndex].map((entry) => entry.category),
 					confidenceThreshold: settings.confidenceThreshold,
-					uncertainHandling: settings.uncertainHandling,
+					uncertainHandling: dynamic ? 'best' : settings.uncertainHandling,
 					model: outcome.response.model,
 					usage: outcome.response.usage,
 				});
-				if (outputIndex < 0) {
+				if (!dynamic && outputIndex < 0) {
 					throw new NodeOperationError(
 						this.getNode(),
 						`Jev answered "${String(result.category)}", which is not one of the categories`,
@@ -629,7 +686,7 @@ export class JevClassification implements INodeType {
 				}
 				const json: IDataObject = settings.includeInput ? { ...items[itemIndex].json } : {};
 				json[settings.outputField] = result as IDataObject;
-				outputs[outputIndex].push({
+				outputs[dynamic ? 0 : outputIndex].push({
 					json,
 					binary: items[itemIndex].binary,
 					pairedItem: { item: itemIndex },

@@ -55,9 +55,14 @@ export interface ApiResponse {
 	usage: Usage;
 }
 
+export interface Category {
+	category: string;
+	description: string;
+}
+
 export interface QuestionParams {
 	instructions: string;
-	categories: Array<{ category: string; description: string }>;
+	categories: Category[];
 	levels: string[];
 	yesMeans: string;
 	noMeans: string;
@@ -104,6 +109,25 @@ export function buildQuestion(
 		if (params.noMeans !== '') question.criteria.false = params.noMeans;
 	}
 	return question;
+}
+
+// Accepts "a, b, c", ["a", "b"] or { "a": "what a means", "b": null }.
+export function parseCategories(value: unknown): Category[] {
+	let parsed = value;
+	if (typeof value === 'string') {
+		const text = value.trim();
+		parsed = text.startsWith('{') || text.startsWith('[') ? JSON.parse(text) : text.split(',');
+	}
+	if (Array.isArray(parsed)) {
+		return parsed.map((name) => ({ category: String(name).trim(), description: '' }));
+	}
+	if (typeof parsed === 'object' && parsed !== null) {
+		return Object.entries(parsed).map(([category, description]) => ({
+			category: category.trim(),
+			description: description === null || description === undefined ? '' : String(description),
+		}));
+	}
+	throw new Error('Categories must be a comma-separated list, a JSON array or a JSON object');
 }
 
 function scopeInstructions(instructions: Instructions, position: number): string {
