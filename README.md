@@ -40,7 +40,11 @@ cd ~/.n8n/nodes
 npm i n8n-nodes-jev-classification
 ```
 
-Restart n8n afterwards. The node shows up as **Jev Classification** when you search the nodes panel (also under Advanced AI). The **Jev Classification Tool** variant for AI Agents appears only if your instance sets `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true`. This node is **self-hosted only**. n8n declined to verify it (September 2026) because n8n is building a built-in classification node and does not verify community nodes that overlap with built-in functionality. That decision was explicitly not about quality, and the package stays fully usable on self-hosted instances.
+Restart n8n afterwards. The node shows up as **Jev Classification** when you search the nodes panel (also under Advanced AI).
+
+![Searching "jev" in the n8n nodes panel lists Jev Classification and Jev Classification Tool](docs/images/node-search.jpg)
+
+The **Jev Classification Tool** variant for AI Agents appears only if your instance sets `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true`. This node is **self-hosted only**. n8n declined to verify it (September 2026) because n8n is building a built-in classification node and does not verify community nodes that overlap with built-in functionality. That decision was explicitly not about quality, and the package stays fully usable on self-hosted instances.
 
 ## Credentials
 
@@ -68,6 +72,8 @@ Categories, Levels and Options are read once per run (not per item), so use fixe
 ### Classify
 
 Pick one category from a list and route the item to that category's output.
+
+![Jev Classification node on the n8n canvas with one output per emotion category (Happy, Sad, Shy, Angry) plus a Needs Review output](docs/images/classify-branches.jpg)
 
 | Parameter | Name | Notes |
 |---|---|---|
@@ -232,6 +238,8 @@ When Items Per Request is above 1, `usage` is the usage of the request the item 
 
 Outputs are recomputed when you change categories or the When Uncertain option, so add or rename categories before wiring the downstream nodes.
 
+![Node output panel: the item landed on the Sad branch with jev.category, confidence, needsReview, probabilities for every category, and the model version](docs/images/classify-output.jpg)
+
 ## Options
 
 | Option | Name | Default | Guidance |
@@ -261,6 +269,8 @@ The token bill is roughly the same in all three cases because the same text is s
 ## Use as an AI Agent tool
 
 The node sets `usableAsTool: true`, so you can attach it to an AI Agent node as a tool. The agent supplies the text and reads back the category, score or answer. This is a good fit for "is this message about X" guards inside an agent, since Jev answers in a few hundred milliseconds and cannot invent a category.
+
+![Jev Classification used as an AI Agent tool: the agent filled Text and Instructions itself and received category "sad" with confidence 1](docs/images/agent-tool.jpg)
 
 ## Writing good questions
 
