@@ -1,0 +1,72 @@
+{
+  "name": "Jev: ask several questions per message, batched",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const messages = [\n  'Cancel my subscription right now, this is unacceptable.',\n  'Can I get a copy of last month\\'s invoice?',\n  'Login page shows a 500 error since this morning.',\n  'Thanks for the quick fix yesterday!',\n  'How do I add a second user to my account?',\n  'I want my money back, the product never arrived.',\n  'Is there an API for exporting reports?',\n  'The mobile app logs me out every few minutes.',\n  'Please update my billing address to our new office.',\n  'Your support team was rude and unhelpful.'\n];\nreturn messages.map((text, i) => ({ json: { id: i + 1, text } }));"
+      },
+      "name": "Sample Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "ask",
+        "inputType": "text",
+        "text": "={{ $json.text }}",
+        "questions": "{\n  \"topic\": {\n    \"type\": \"choice\",\n    \"instructions\": \"What is the message mainly about?\",\n    \"criteria\": {\n      \"billing\": \"payments, invoices, refunds, subscriptions\",\n      \"technical\": \"errors, bugs, things not working\",\n      \"account\": \"users, settings, account details\",\n      \"other\": null\n    }\n  },\n  \"frustration\": {\n    \"type\": \"score\",\n    \"instructions\": \"How frustrated is the sender?\",\n    \"criteria\": [\"Calm\", \"Mildly annoyed\", \"Frustrated\", \"Angry\"]\n  },\n  \"wants_refund\": {\n    \"type\": \"noul\",\n    \"instructions\": \"Does the sender ask for a refund or their money back?\",\n    \"criteria\": {\n      \"true\": \"The sender explicitly asks for money back or a refund\",\n      \"false\": \"No refund request\"\n    }\n  }\n}",
+        "options": {
+          "itemsPerRequest": 10,
+          "concurrency": 2
+        }
+      },
+      "name": "Jev Classification",
+      "type": "n8n-nodes-jev-classification.jevClassification",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "jevClassificationApi": { "id": "", "name": "Jev (TypeSafe) API" }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "answers",
+              "name": "answers",
+              "value": "={{ $json.jev.answers }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Pick Answers",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Sample Messages", "type": "main", "index": 0 }]]
+    },
+    "Sample Messages": {
+      "main": [[{ "node": "Jev Classification", "type": "main", "index": 0 }]]
+    },
+    "Jev Classification": {
+      "main": [[{ "node": "Pick Answers", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

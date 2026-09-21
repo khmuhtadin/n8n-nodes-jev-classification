@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-jev-classification",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["AI", "Data & Storage"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/khmuhtadin/n8n-nodes-jev-classification#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/khmuhtadin/n8n-nodes-jev-classification#readme"
+			}
+		]
+	}
+}

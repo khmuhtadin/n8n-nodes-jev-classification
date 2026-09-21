@@ -1,0 +1,91 @@
+{
+  "name": "Jev: route support tickets",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { id: 1, text: 'I was charged twice this month, please refund the duplicate payment.' } },\n  { json: { id: 2, text: 'The app crashes every time I open the reports page on Android.' } },\n  { json: { id: 3, text: 'Do you offer volume discounts for a team of 40 people?' } },\n  { json: { id: 4, text: 'My invoice shows the wrong company name and VAT number.' } },\n  { json: { id: 5, text: 'Hi, just wanted to say thanks, everything works fine.' } }\n];"
+      },
+      "name": "Sample Tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "classify",
+        "inputType": "text",
+        "text": "={{ $json.text }}",
+        "instructions": "Which team should handle this ticket?",
+        "categories": {
+          "categories": [
+            { "category": "billing", "description": "Payments, refunds, invoices, charges, subscriptions" },
+            { "category": "technical", "description": "Bugs, errors, crashes, things not working" },
+            { "category": "sales", "description": "Pricing, plans, discounts, buying for a team" }
+          ]
+        },
+        "options": {
+          "confidenceThreshold": 0.6
+        }
+      },
+      "name": "Jev Classification",
+      "type": "n8n-nodes-jev-classification.jevClassification",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "jevClassificationApi": { "id": "", "name": "Jev (TypeSafe) API" }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "billing",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [740, 120]
+    },
+    {
+      "parameters": {},
+      "name": "technical",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [740, 260]
+    },
+    {
+      "parameters": {},
+      "name": "sales",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [740, 400]
+    },
+    {
+      "parameters": {},
+      "name": "Needs Review",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [740, 540]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Sample Tickets", "type": "main", "index": 0 }]]
+    },
+    "Sample Tickets": {
+      "main": [[{ "node": "Jev Classification", "type": "main", "index": 0 }]]
+    },
+    "Jev Classification": {
+      "main": [
+        [{ "node": "billing", "type": "main", "index": 0 }],
+        [{ "node": "technical", "type": "main", "index": 0 }],
+        [{ "node": "sales", "type": "main", "index": 0 }],
+        [{ "node": "Needs Review", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

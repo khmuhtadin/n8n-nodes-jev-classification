@@ -34,7 +34,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"smoke": "npm run build && node scripts/smoke.ts",
+		"smoke": "npm run build && node scripts/smoke.mts",
 		"release": "n8n-node release",
 		"prepublishOnly": "n8n-node prerelease"
 	},

@@ -1,0 +1,149 @@
+{
+  "name": "Jev: score sentiment and check for defects",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { id: 1, text: 'Absolutely love it. Fast delivery and the build quality is great.' } },\n  { json: { id: 2, text: 'Arrived with a cracked screen and a dent on the corner. Very disappointed.' } },\n  { json: { id: 3, text: 'It is fine. Does the job, nothing special.' } }\n];"
+      },
+      "name": "Sample Reviews",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "score",
+        "inputType": "text",
+        "text": "={{ $json.text }}",
+        "instructions": "How positive is this product review?",
+        "levels": {
+          "levels": [
+            { "level": "Very negative" },
+            { "level": "Negative" },
+            { "level": "Neutral" },
+            { "level": "Positive" },
+            { "level": "Very positive" }
+          ]
+        },
+        "options": {
+          "itemsPerRequest": 3
+        }
+      },
+      "name": "Score Sentiment",
+      "type": "n8n-nodes-jev-classification.jevClassification",
+      "typeVersion": 1,
+      "position": [460, 160],
+      "credentials": {
+        "jevClassificationApi": { "id": "", "name": "Jev (TypeSafe) API" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "score-positive",
+              "leftValue": "={{ $json.jev.score >= 3 }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Positive?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, 160]
+    },
+    {
+      "parameters": {},
+      "name": "Positive",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [980, 80]
+    },
+    {
+      "parameters": {},
+      "name": "Not Positive",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [980, 240]
+    },
+    {
+      "parameters": {
+        "operation": "check",
+        "inputType": "text",
+        "text": "={{ $json.text }}",
+        "instructions": "Does the review mention a defect or damage?",
+        "yesMeans": "The reviewer describes a physical defect, damage or malfunction of the product",
+        "noMeans": "No defect or damage is mentioned",
+        "options": {}
+      },
+      "name": "Check Defect",
+      "type": "n8n-nodes-jev-classification.jevClassification",
+      "typeVersion": 1,
+      "position": [460, 460],
+      "credentials": {
+        "jevClassificationApi": { "id": "", "name": "Jev (TypeSafe) API" }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Yes",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [720, 380]
+    },
+    {
+      "parameters": {},
+      "name": "No",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [720, 540]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Sample Reviews", "type": "main", "index": 0 }]]
+    },
+    "Sample Reviews": {
+      "main": [
+        [
+          { "node": "Score Sentiment", "type": "main", "index": 0 },
+          { "node": "Check Defect", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Score Sentiment": {
+      "main": [[{ "node": "Positive?", "type": "main", "index": 0 }]]
+    },
+    "Positive?": {
+      "main": [
+        [{ "node": "Positive", "type": "main", "index": 0 }],
+        [{ "node": "Not Positive", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Defect": {
+      "main": [
+        [{ "node": "Yes", "type": "main", "index": 0 }],
+        [{ "node": "No", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
