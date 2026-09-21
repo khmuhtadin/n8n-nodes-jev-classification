@@ -1,0 +1,71 @@
+{
+	"name": "n8n-nodes-jev-classification",
+	"version": "0.1.0",
+	"description": "n8n community node for Jev by TypeSafe AI: classify, score and check text with calibrated probabilities. Parallel requests and multi-item batching for high-volume workflows.",
+	"license": "MIT",
+	"homepage": "https://github.com/khmuhtadin/n8n-nodes-jev-classification#readme",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"jev",
+		"typesafe",
+		"typesafe-ai",
+		"system-one",
+		"classification",
+		"text-classifier",
+		"routing",
+		"scoring",
+		"ai"
+	],
+	"author": {
+		"name": "khmuhtadin",
+		"email": "contact@khmuhtadin.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/khmuhtadin/n8n-nodes-jev-classification.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"smoke": "npm run build && node scripts/smoke.ts",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/JevClassificationApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/JevClassification/JevClassification.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"eslint": "9.32.0",
+		"prettier": "3.6.2",
+		"release-it": "^19.0.4",
+		"typescript": "5.9.2",
+		"vitest": "^4.1.9"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"bugs": {
+		"url": "https://github.com/khmuhtadin/n8n-nodes-jev-classification/issues"
+	},
+	"engines": {
+		"node": ">=20"
+	}
+}
