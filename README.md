@@ -48,11 +48,17 @@ The **Jev Classification Tool** variant for AI Agents appears only if your insta
 
 ## Credentials
 
-1. Create an API key at [console.typesafe.ai/keys](https://console.typesafe.ai/keys).
-2. In n8n, create a credential of type **Jev (TypeSafe) API** and paste the key.
-3. Click **Test**. The test calls `GET https://api.typesafe.ai/v1/models` with your key.
+1. Get an API key from TypeSafe at [console.typesafe.ai/keys](https://console.typesafe.ai/keys), or from a gateway that serves Jev (see below).
+2. In n8n, create a credential of type **Jev (TypeSafe) API**, paste the key and set **Base URL** for your provider.
+3. Click **Test**. The test sends one tiny real request to `POST <Base URL>/v1/systemone` (about 270 input tokens, a fraction of a cent). A plain "list models" call would not prove anything on gateways that serve that endpoint without a key.
 
-The key is sent as `Authorization: Bearer <key>` to `https://api.typesafe.ai` only.
+| Provider | Base URL | Model IDs |
+|---|---|---|
+| TypeSafe (default) | `https://api.typesafe.ai` | `jev-latest`, `jev-preview`, `jev-1.13.0` |
+| OpenRouter | `https://openrouter.ai/api` | `jev-latest`, `jev-1.13` (bare IDs are mapped to `typesafe/`), or `~typesafe/jev-latest` as a custom Model ID |
+| Vercel AI Gateway | `https://ai-gateway.vercel.sh/typesafe` | Set **Model** to Custom with Model ID `typesafe-ai/jev`. The credential Test uses `jev-latest` and may fail on this gateway even when the node works. |
+
+The key is sent as `Authorization: Bearer <key>` to the Base URL only. The request and response shapes are identical across providers; OpenRouter adds `id`, `provider` and `usage.cost` fields, which the node passes through in raw responses and ignores otherwise.
 
 ## Operations
 

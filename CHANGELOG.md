@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (2026-09-26)
+
+- Credential: new **Base URL** field (default `https://api.typesafe.ai`) so the node can call Jev through OpenRouter (`https://openrouter.ai/api`) or the Vercel AI Gateway (`https://ai-gateway.vercel.sh/typesafe`). Existing credentials keep the TypeSafe URL. Closes #1.
+- Credential test now sends one tiny real request to `/v1/systemone` instead of listing models, because gateways serve the models list without a key.
+
 ## 0.2.0 (2026-09-21)
 
 - Classify: new **Categories Source** option. **Fixed** (default) keeps one output per category. **Dynamic** reads the categories per item from a comma-separated string, a JSON array or a JSON object of name to description, so they can come from an expression or be filled by an AI Agent. Dynamic mode has a single **Result** output.

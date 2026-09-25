@@ -29,6 +29,10 @@ function makeContext(
 			parameters: {},
 		}),
 		continueOnFail: () => continueOnFail,
+		getCredentials: async () => ({
+			apiKey: 'test',
+			baseUrl: (params.__baseUrl as string) ?? 'https://api.typesafe.ai',
+		}),
 		helpers: { httpRequestWithAuthentication: request },
 	};
 	return ctx as unknown as IExecuteFunctions;
@@ -304,6 +308,14 @@ describe('classify with dynamic categories', () => {
 		);
 		expect(outputs[0]).toHaveLength(3);
 		expect(outputs[0][0].json.jev).toMatchObject({ category: 'billing' });
+	});
+});
+
+describe('base URL', () => {
+	it('posts to /v1/systemone under the credential base URL, tolerating a trailing slash', async () => {
+		const request = server(choiceFor);
+		await run(tickets, { ...classifyParams, __baseUrl: 'https://openrouter.ai/api/' }, request);
+		expect(request.mock.calls[0][1].url).toBe('https://openrouter.ai/api/v1/systemone');
 	});
 });
 

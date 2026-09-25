@@ -27,7 +27,6 @@ import {
 	toResult,
 } from './helpers';
 
-const API_URL = 'https://api.typesafe.ai/v1/systemone';
 
 // Stringified into the `outputs` expression, so it must not use imports or closures.
 const configuredOutputs = (parameters: INodeParameters) => {
@@ -68,6 +67,7 @@ interface Options {
 }
 
 interface Settings {
+	url: string;
 	model: string;
 	confidenceThreshold: number;
 	uncertainHandling: 'review' | 'best';
@@ -212,7 +212,7 @@ async function sendRequest(
 		try {
 			response = await ctx.helpers.httpRequestWithAuthentication.call(ctx, 'jevClassificationApi', {
 				method: 'POST',
-				url: API_URL,
+				url: settings.url,
 				body,
 				json: true,
 				timeout: settings.timeout,
@@ -602,7 +602,9 @@ export class JevClassification implements INodeType {
 		const items = this.getInputData();
 		const operation = this.getNodeParameter('operation', 0) as Operation;
 		const options = this.getNodeParameter('options', 0, {}) as Options;
+		const credentials = await this.getCredentials('jevClassificationApi');
 		const settings: Settings = {
+			url: `${String(credentials.baseUrl).replace(/\/+$/, '')}/v1/systemone`,
 			model: options.model === 'custom' ? (options.modelId ?? '') : (options.model ?? 'jev-latest'),
 			confidenceThreshold: options.confidenceThreshold ?? 0.5,
 			uncertainHandling: options.uncertainHandling ?? 'review',

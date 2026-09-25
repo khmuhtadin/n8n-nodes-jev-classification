@@ -167,6 +167,10 @@ function makeContext(
 			parameters: {},
 		}),
 		continueOnFail: () => false,
+		getCredentials: async () => ({
+			apiKey: key,
+			baseUrl: process.env.TYPESAFE_BASE_URL ?? 'https://api.typesafe.ai',
+		}),
 		helpers: {
 			httpRequestWithAuthentication: async (
 				_credential: string,

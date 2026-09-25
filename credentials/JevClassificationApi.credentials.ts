@@ -23,7 +23,17 @@ export class JevClassificationApi implements ICredentialType {
 			typeOptions: { password: true },
 			default: '',
 			required: true,
-			description: 'API key from the TypeSafe AI dashboard',
+			description: 'API key from TypeSafe (console.typesafe.ai) or from a gateway such as OpenRouter',
+		},
+		{
+			displayName: 'Base URL',
+			name: 'baseUrl',
+			type: 'string',
+			default: 'https://api.typesafe.ai',
+			required: true,
+			placeholder: 'e.g. https://openrouter.ai/api',
+			description:
+				'Where /v1/systemone is served. TypeSafe: https://api.typesafe.ai. OpenRouter: https://openrouter.ai/api. Vercel AI Gateway: https://ai-gateway.vercel.sh/typesafe.',
 		},
 	];
 
@@ -36,11 +46,18 @@ export class JevClassificationApi implements ICredentialType {
 		},
 	};
 
+	// One tiny real request: gateways such as OpenRouter serve /v1/models without a key,
+	// so only /v1/systemone proves the key works. Costs about 270 input tokens.
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://api.typesafe.ai',
-			url: '/v1/models',
-			method: 'GET',
+			baseURL: '={{$credentials.baseUrl.replace(/\\/+$/, "")}}',
+			url: '/v1/systemone',
+			method: 'POST',
+			body: {
+				state: 'ping',
+				model: 'jev-latest',
+				questions: { ok: { type: 'noul', instructions: 'Is this a test?' } },
+			},
 		},
 	};
 }
