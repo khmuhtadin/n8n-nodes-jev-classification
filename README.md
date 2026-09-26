@@ -368,6 +368,6 @@ This is a community node maintained by [khmuhtadin](https://github.com/khmuhtadi
 
 A 30 second motion graphic for the 0.3.0 release: what the node does, the Base URL field, and why the credential test changed.
 
-[![Watch the Jev Classification 0.3.0 launch video](docs/images/launch-video-poster.jpg)](docs/video/jev-classification-0.3.0-launch.mp4)
+![Jev Classification 0.3.0 launch video](docs/images/launch-video-preview.gif)
 
-Video file: [docs/video/jev-classification-0.3.0-launch.mp4](docs/video/jev-classification-0.3.0-launch.mp4) (1920x1080, 30 seconds, 9.5 MB)
+[Watch the full video with sound (MP4, 9.5 MB)](https://github.com/khmuhtadin/n8n-nodes-jev-classification/releases/download/0.3.0/jev-classification-launch.mp4), or take it [from the repo](docs/video/jev-classification-0.3.0-launch.mp4) at 1920x1080. The preview above is a silent GIF: GitHub only renders a video player for media hosted on its own attachment CDN, so the MP4 is where the audio is.
