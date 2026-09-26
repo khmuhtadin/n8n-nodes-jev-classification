@@ -363,3 +363,11 @@ This is a community node maintained by [khmuhtadin](https://github.com/khmuhtadi
 ## License
 
 [MIT](LICENSE)
+
+## Launch video
+
+A 30 second motion graphic for the 0.3.0 release: what the node does, the Base URL field, and why the credential test changed.
+
+[![Watch the Jev Classification 0.3.0 launch video](docs/images/launch-video-poster.jpg)](docs/video/jev-classification-0.3.0-launch.mp4)
+
+Video file: [docs/video/jev-classification-0.3.0-launch.mp4](docs/video/jev-classification-0.3.0-launch.mp4) (1920x1080, 30 seconds, 9.5 MB)
